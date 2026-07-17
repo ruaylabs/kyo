@@ -15,6 +15,16 @@ the keyboard.
 - **Tag autocomplete**: suggests existing tags as you type
 - **SQLite** backend with versioned migrations
 
+## Install
+
+Using `Homebrew`:
+
+```shell
+brew tap ruaylabs/tap
+
+brew install --cask kyo
+```
+
 ## Stack
 
 - **Frontend**: Svelte 5 + SvelteKit (SPA)
