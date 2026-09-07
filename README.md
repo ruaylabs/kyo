@@ -42,14 +42,22 @@ pnpm install
 pnpm tauri dev
 ```
 
-## macOS
+## macOS publishing
 
-The app is not notarized by Apple. After installing the `.dmg`, you may need to remove the
-quarantine attribute before launching:
+Tauri signs and notarizes the macOS bundle automatically when the following environment variables
+are set:
 
-```bash
-xattr -cr /Applications/kyo.app
-```
+|Variable                |Description                                          |
+|------------------------|-----------------------------------------------------|
+|`APPLE_SIGNING_IDENTITY`|`Developer ID Application: ...` code signing identity|
+|`APPLE_ID`              |Apple ID (email) used for notarization               |
+|`APPLE_PASSWORD`        |App-specific password for that Apple ID              |
+|`APPLE_TEAM_ID`         |10-character Apple Developer Team ID                 |
+
+Optional: set `APPLE_CERTIFICATE` and `APPLE_CERTIFICATE_PASSWORD` (base64-encoded `.p12` and its
+password) instead of relying on a keychain-installed identity.
+
+Build a signed and notarized release (done by the release workflow on tag push):
 
 ## Just recipes
 
