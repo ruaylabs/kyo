@@ -8,6 +8,7 @@
   import WeeklyReview from "$lib/WeeklyReview.svelte";
   import { relativeTime } from "$lib/dates";
   import { handleMarkdownClick } from "$lib/links";
+  import { getVersion } from "@tauri-apps/api/app";
   import { marked } from "marked";
   import type { CardStore } from "$lib/card-store";
   import { createTauriCardStore } from "$lib/card-store-tauri";
@@ -23,6 +24,12 @@
 
   // --- data store ---
   const store: CardStore & { init: () => Promise<void> } = createTauriCardStore();
+
+  let appVersion = $state("");
+
+  $effect(() => {
+    void getVersion().then((v) => (appVersion = v ?? ""));
+  });
 
   let cards: Card[] = $state(store.cards);
 
@@ -399,6 +406,7 @@
     <span><kbd>x</kbd> done</span>
     <span><kbd>d</kbd> archive</span>
     <span><kbd>a</kbd> archived ({archivedCards.length})</span>
+    <span class="version">v{appVersion}</span>
   </footer>
 </div>
 
@@ -828,6 +836,12 @@
   .footer kbd {
     font-size: 10px;
     margin-right: 3px;
+  }
+  .footer .version {
+    margin-left: auto;
+  }
+  .footer .version::before {
+    content: none;
   }
   .footer span + span::before {
     content: "·";
