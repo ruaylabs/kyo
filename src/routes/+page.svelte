@@ -214,6 +214,7 @@
         e.preventDefault();
         editPreview = !editPreview;
       }
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (showCardModal && key === "e" && !isEditingText()) {
         e.preventDefault();
         const card = cards.find((c) => c.id === viewingCardId);
@@ -246,6 +247,14 @@
       }
       return;
     }
+
+    // Handle Cmd/Ctrl+K before single-key navigation shortcuts.
+    if (key === "k" && (e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey) {
+      e.preventDefault();
+      showCommandPalette = true;
+      return;
+    }
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
 
     switch (key) {
       case "j":
@@ -322,12 +331,6 @@
         e.preventDefault();
         showHelp = !showHelp;
         break;
-    }
-
-    // Cmd+K (Meta on Mac, Ctrl on Linux/Windows)
-    if (key === "k" && (e.metaKey || e.ctrlKey)) {
-      e.preventDefault();
-      showCommandPalette = true;
     }
   }
 </script>
