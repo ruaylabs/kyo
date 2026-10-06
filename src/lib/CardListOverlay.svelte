@@ -1,5 +1,6 @@
 <script lang="ts">
   import Overlay from "$lib/Overlay.svelte";
+  import { onMount, tick } from "svelte";
   import type { Card } from "$lib/types.ts";
 
   let {
@@ -21,26 +22,80 @@
     secondaryLabel?: string;
     oncardclick?: (card: Card) => void;
   } = $props();
+
+  let headingEl: HTMLHeadingElement;
+
+  function dialogButtons(): HTMLButtonElement[] {
+    return [
+      ...(headingEl
+        ?.closest(".dialog")
+        ?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)") ?? []),
+    ];
+  }
+
+  onMount(() => {
+    const previousFocus = document.activeElement as HTMLElement | null;
+    dialogButtons()[0]?.focus();
+
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== "Tab" || e.ctrlKey || e.metaKey || e.altKey) return;
+      const buttons = dialogButtons();
+      if (!buttons.length) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      const index = buttons.indexOf(document.activeElement as HTMLButtonElement);
+      const next =
+        index < 0
+          ? e.shiftKey
+            ? buttons.length - 1
+            : 0
+          : (index + (e.shiftKey ? -1 : 1) + buttons.length) % buttons.length;
+      buttons[next].focus();
+    }
+
+    window.addEventListener("keydown", onKey, true);
+    return () => {
+      window.removeEventListener("keydown", onKey, true);
+      if (previousFocus?.isConnected) previousFocus.focus();
+    };
+  });
+
+  // Restoring a card can remove the focused button from the list.
+  $effect(() => {
+    void cards;
+    void tick().then(() => {
+      const dialog = headingEl?.closest(".dialog");
+      if (dialog?.isConnected && !dialog.contains(document.activeElement)) {
+        dialogButtons()[0]?.focus();
+      }
+    });
+  });
 </script>
 
 <Overlay {onclose} class="archived-dialog">
-  <h3>{title}</h3>
+  <h3 bind:this={headingEl}>{title}</h3>
 
   {#if cards.length === 0}
     <p class="empty">no cards</p>
   {:else}
     <div class="list">
       {#each cards as card (card.id)}
-        <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-        <div class="item" class:clickable={!!oncardclick} onclick={() => oncardclick?.(card)}>
-          <div class="item-name">{card.name}</div>
-          {#if card.tags.length > 0}
-            <div class="tags">
-              {#each card.tags as tag}
-                <span class="tag">{tag}</span>
-              {/each}
-            </div>
-          {/if}
+        <div class="item">
+          <button
+            type="button"
+            class="card-open"
+            disabled={!oncardclick}
+            onclick={() => oncardclick?.(card)}
+          >
+            <span class="item-name">{card.name}</span>
+            {#if card.tags.length > 0}
+              <span class="tags">
+                {#each card.tags as tag}
+                  <span class="tag">{tag}</span>
+                {/each}
+              </span>
+            {/if}
+          </button>
           <div class="actions">
             <button type="button" class="btn primary small" onclick={() => restore(card)}>
               {label}
@@ -81,13 +136,30 @@
     opacity: 0.7;
   }
 
-  .item.clickable {
+  .card-open {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: none;
+    border-radius: 3px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
     cursor: pointer;
   }
 
-  .item.clickable:hover {
+  .card-open:disabled {
+    cursor: default;
+  }
+
+  .card-open:not(:disabled):hover {
     background: var(--bg-hover);
-    opacity: 1;
+  }
+
+  .card-open:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 4px;
   }
 
   .item-name {
