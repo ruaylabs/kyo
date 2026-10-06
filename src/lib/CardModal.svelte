@@ -117,6 +117,9 @@
     {#if card.archived}
       <button type="button" class="btn" onclick={() => onarchive?.()}>Restore</button>
     {:else if !isReadonly}
+      <button type="button" class="btn" onclick={() => commentSection?.focusNewComment()}>
+        Add Comment <kbd class="kbd-inline">c</kbd>
+      </button>
       <button type="button" class="btn" onclick={ondone}>
         Done <kbd class="kbd-inline">x</kbd>
       </button>
