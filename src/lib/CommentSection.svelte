@@ -2,6 +2,7 @@
   import { timeAgo } from "$lib/dates";
   import { handleMarkdownClick } from "$lib/links";
   import { marked } from "marked";
+  import { tick } from "svelte";
   import type { Comment } from "$lib/types.ts";
   import type { CardStore } from "$lib/card-store";
 
@@ -19,6 +20,15 @@
   let editingCommentId: string | null = $state(null);
   let draftBody = $state("");
   let draftPreview = $state(false);
+  let newCommentInput = $state<HTMLTextAreaElement>();
+
+  export async function focusNewComment() {
+    if (isReadonly || editingCommentId !== null) return;
+    draftPreview = false;
+    await tick();
+    newCommentInput?.focus();
+    newCommentInput?.scrollIntoView({ block: "nearest" });
+  }
 
   async function loadComments() {
     comments = await store.getComments(cardId);
@@ -27,10 +37,14 @@
   async function submitDraft() {
     const body = draftBody.trim();
     if (!body) return;
+    const focusedInput = document.activeElement;
     if (editingCommentId) {
       await store.updateComment(editingCommentId, body);
     } else {
       await store.addComment(cardId, body);
+    }
+    if (focusedInput instanceof HTMLTextAreaElement && document.activeElement === focusedInput) {
+      focusedInput.closest<HTMLElement>('[role="dialog"]')?.focus({ preventScroll: true });
     }
     resetDraft();
     await loadComments();
@@ -74,7 +88,12 @@
 </script>
 
 <div class="comments-section">
-  <h4 class="comments-heading">Comments ({comments.length})</h4>
+  <h4 class="comments-heading">
+    Comments ({comments.length})
+    {#if !isReadonly && editingCommentId === null}
+      <kbd class="kbd-inline" title="Press c to add a comment">c</kbd>
+    {/if}
+  </h4>
 
   {#each comments as comment (comment.id)}
     <div class="comment">
@@ -151,6 +170,7 @@
         <textarea
           class="comment-input"
           bind:value={draftBody}
+          bind:this={newCommentInput}
           placeholder="Add a comment (Markdown)"
           rows="3"
           onkeydown={onDraftKeydown}

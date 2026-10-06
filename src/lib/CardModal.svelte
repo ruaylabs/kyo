@@ -30,6 +30,7 @@
   let html = $derived(card.content ? marked.parse(card.content) : "");
   let isReadonly = $derived(!!card.archived || !!card.doneAt);
   let showLinks = $state(false);
+  let commentSection: { focusNewComment: () => Promise<void> } | undefined;
 
   onMount(() => {
     function onKey(e: KeyboardEvent) {
@@ -40,6 +41,10 @@
         e.preventDefault();
         e.stopImmediatePropagation();
         showLinks = true;
+      } else if (e.key.toLowerCase() === "c" && !isReadonly) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        void commentSection?.focusNewComment();
       }
     }
     window.addEventListener("keydown", onKey, true);
@@ -64,7 +69,7 @@
         <p class="content empty-content">No description</p>
       {/if}
 
-      <CommentSection cardId={card.id} {store} {isReadonly} />
+      <CommentSection bind:this={commentSection} cardId={card.id} {store} {isReadonly} />
     </div>
 
     <div class="sidebar">
