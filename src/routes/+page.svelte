@@ -79,6 +79,7 @@
 
   // edit-specific
   let editId: string | null = $state<string | null>(null);
+  let editReturnCardId = $state<string | null>(null);
 
   // --- derived ---
   let visibleCards: Card[] = $derived(grouped[COLUMNS[colIdx].id] ?? []);
@@ -130,8 +131,10 @@
   }
 
   // --- navigation ---
-  function openEditFor(card: Card) {
+  function openEditFor(card: Card, returnToDetails = false) {
     editId = card.id;
+    editReturnCardId = returnToDetails ? card.id : null;
+    showCardModal = false;
     formName = card.name;
     formContent = card.content;
     formTags = card.tags.join(", ");
@@ -151,8 +154,13 @@
       tags,
       dueDate: formDueDate || "",
     });
+    if (editReturnCardId) {
+      viewingCardId = editReturnCardId;
+      showCardModal = true;
+    }
     showEditDialog = false;
     editId = null;
+    editReturnCardId = null;
   }
 
   async function submitNewCard() {
@@ -219,8 +227,7 @@
         e.preventDefault();
         const card = cards.find((c) => c.id === viewingCardId);
         if (card && !card.archived && !card.doneAt) {
-          showCardModal = false;
-          openEditFor(card);
+          openEditFor(card, true);
         }
       }
       if (showCardModal && key === "x" && !isEditingText()) {
@@ -488,7 +495,7 @@
           columns={COLUMNS}
           {store}
           onclose={() => { showCardModal = false; viewingCardId = null; }}
-          onedit={() => { showCardModal = false; openEditFor(card); }}
+          onedit={() => openEditFor(card, true)}
           ondone={async () => { await store.markDone(card.id); showCardModal = false; viewingCardId = null; }}
           onarchive={async () => {
         if (card.archived) {
