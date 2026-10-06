@@ -593,6 +593,10 @@
           <td colspan="2">In card modal</td>
         </tr>
         <tr>
+          <td><kbd>l</kbd></td>
+          <td>Search links in this card and its comments</td>
+        </tr>
+        <tr>
           <td><kbd>e</kbd></td>
           <td>Switch to edit mode</td>
         </tr>

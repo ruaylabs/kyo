@@ -1,5 +1,7 @@
 <script lang="ts">
   import CommentSection from "$lib/CommentSection.svelte";
+  import LinkPalette from "$lib/LinkPalette.svelte";
+  import { onMount } from "svelte";
   import { shortDate } from "$lib/dates";
   import { handleMarkdownClick } from "$lib/links";
   import Overlay from "$lib/Overlay.svelte";
@@ -27,6 +29,22 @@
 
   let html = $derived(card.content ? marked.parse(card.content) : "");
   let isReadonly = $derived(!!card.archived || !!card.doneAt);
+  let showLinks = $state(false);
+
+  onMount(() => {
+    function onKey(e: KeyboardEvent) {
+      if (showLinks || e.isComposing || e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement;
+      if (target.closest("input, textarea, select") || target.isContentEditable) return;
+      if (e.key.toLowerCase() === "l") {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        showLinks = true;
+      }
+    }
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  });
 </script>
 
 <Overlay {onclose} class="card-dialog">
@@ -90,6 +108,9 @@
   <div class="dialog-actions">
     <button type="button" class="btn" onclick={onclose}>Close</button>
     <div>
+      <button type="button" class="btn" onclick={() => (showLinks = true)}>
+        Links <kbd class="kbd-inline">l</kbd>
+      </button>
       {#if card.archived}
         <button type="button" class="btn" onclick={() => onarchive?.()}>Restore</button>
       {:else if !isReadonly}
@@ -106,6 +127,10 @@
     </div>
   </div>
 </Overlay>
+
+{#if showLinks}
+  <LinkPalette {card} {store} onclose={() => (showLinks = false)} />
+{/if}
 
 <style>
   :global(.card-dialog) {
