@@ -4,7 +4,6 @@
   import { onMount } from "svelte";
   import { shortDate } from "$lib/dates";
   import { handleMarkdownClick } from "$lib/links";
-  import Overlay from "$lib/Overlay.svelte";
   import { marked } from "marked";
   import type { Card } from "$lib/types.ts";
   import type { CardStore } from "$lib/card-store";
@@ -52,86 +51,84 @@
   });
 </script>
 
-<Overlay {onclose} class="card-dialog">
-  <!-- header -->
-  <div class="header">
-    <h3>{card.name}</h3>
-    <span class="col-badge">{columns.find((c) => c.id === card.column)?.title}</span>
+<!-- header -->
+<div class="header">
+  <h3>{card.name}</h3>
+  <span class="col-badge">{columns.find((c) => c.id === card.column)?.title}</span>
+</div>
+
+<!-- body: main + sidebar -->
+<div class="body">
+  <div class="main">
+    {#if html}
+      <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+      <div class="content markdown" onclick={handleMarkdownClick}>{@html html}</div>
+    {:else}
+      <p class="content empty-content">No description</p>
+    {/if}
+
+    <CommentSection bind:this={commentSection} cardId={card.id} {store} {isReadonly} />
   </div>
 
-  <!-- body: main + sidebar -->
-  <div class="body">
-    <div class="main">
-      {#if html}
-        <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-        <div class="content markdown" onclick={handleMarkdownClick}>{@html html}</div>
-      {:else}
-        <p class="content empty-content">No description</p>
-      {/if}
+  <div class="sidebar">
+    {#if card.tags.length > 0}
+      <div class="meta-block">
+        <span>Tags</span>
+        <div class="tags">
+          {#each card.tags as tag}
+            <span class="tag">{tag}</span>
+          {/each}
+        </div>
+      </div>
+    {/if}
 
-      <CommentSection bind:this={commentSection} cardId={card.id} {store} {isReadonly} />
+    {#if card.dueDate}
+      <div class="meta-block">
+        <span>Due date</span>
+        <span class="due-date">{card.dueDate}</span>
+      </div>
+    {/if}
+
+    <div class="meta-block">
+      <span>Carried over</span>
+      <span class="score">{card.score ?? 0} ×</span>
     </div>
 
-    <div class="sidebar">
-      {#if card.tags.length > 0}
-        <div class="meta-block">
-          <span>Tags</span>
-          <div class="tags">
-            {#each card.tags as tag}
-              <span class="tag">{tag}</span>
-            {/each}
-          </div>
-        </div>
-      {/if}
-
-      {#if card.dueDate}
-        <div class="meta-block">
-          <span>Due date</span>
-          <span class="due-date">{card.dueDate}</span>
-        </div>
-      {/if}
-
-      <div class="meta-block">
-        <span>Carried over</span>
-        <span class="score">{card.score ?? 0} ×</span>
-      </div>
-
-      <div class="meta-block">
-        <span>Created</span>
-        <span class="date">{shortDate(card.createdAt)}</span>
-      </div>
-      {#if card.doneAt}
-        <div class="meta-block">
-          <span>Done</span>
-          <span class="date">{shortDate(card.doneAt)}</span>
-        </div>
-      {/if}
+    <div class="meta-block">
+      <span>Created</span>
+      <span class="date">{shortDate(card.createdAt)}</span>
     </div>
+    {#if card.doneAt}
+      <div class="meta-block">
+        <span>Done</span>
+        <span class="date">{shortDate(card.doneAt)}</span>
+      </div>
+    {/if}
   </div>
+</div>
 
-  <!-- actions -->
-  <div class="dialog-actions">
-    <button type="button" class="btn" onclick={onclose}>Close</button>
-    <div>
-      <button type="button" class="btn" onclick={() => (showLinks = true)}>
-        Links <kbd class="kbd-inline">l</kbd>
+<!-- actions -->
+<div class="dialog-actions">
+  <button type="button" class="btn" onclick={onclose}>Close</button>
+  <div>
+    <button type="button" class="btn" onclick={() => (showLinks = true)}>
+      Links <kbd class="kbd-inline">l</kbd>
+    </button>
+    {#if card.archived}
+      <button type="button" class="btn" onclick={() => onarchive?.()}>Restore</button>
+    {:else if !isReadonly}
+      <button type="button" class="btn" onclick={ondone}>
+        Done <kbd class="kbd-inline">x</kbd>
       </button>
-      {#if card.archived}
-        <button type="button" class="btn" onclick={() => onarchive?.()}>Restore</button>
-      {:else if !isReadonly}
-        <button type="button" class="btn" onclick={ondone}>
-          Done <kbd class="kbd-inline">x</kbd>
-        </button>
-        <button type="button" class="btn" onclick={onedit}>
-          Edit <kbd class="kbd-inline">e</kbd>
-        </button>
-        <button type="button" class="btn" onclick={() => onarchive?.()}>
-          Archive <kbd class="kbd-inline">d</kbd>
-        </button>
-      {/if}
-    </div>
+      <button type="button" class="btn" onclick={onedit}>
+        Edit <kbd class="kbd-inline">e</kbd>
+      </button>
+      <button type="button" class="btn" onclick={() => onarchive?.()}>
+        Archive <kbd class="kbd-inline">d</kbd>
+      </button>
+    {/if}
   </div>
-</Overlay>
+</div>
 
 {#if showLinks}
   <LinkPalette {card} {store} onclose={() => (showLinks = false)} />

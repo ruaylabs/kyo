@@ -436,61 +436,61 @@
   </Overlay>
 {/if}
 
-<!-- edit dialog -->
-{#if showEditDialog}
-  <Overlay onclose={() => (showEditDialog = false)} class="edit-dialog">
-    <div class="edit-header">
-      <h3>Edit Card</h3>
-      <button type="button" class="btn small" onclick={() => (editPreview = !editPreview)}>
-        {editPreview ? "Edit" : "Preview"}
-        <span class="shortcut-hint">{navigator.platform.includes("Mac") ? "⌘P" : "Ctrl+P"}</span>
-      </button>
-    </div>
-
-    {#if editPreview}
-      <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-      <div class="edit-preview markdown" onclick={handleMarkdownClick}>
-        {#if formContent.trim()}
-          {@html marked.parse(formContent)}
-        {:else}
-          <p class="empty-content">No description</p>
-        {/if}
+<!-- shared overlay keeps the backdrop mounted when switching between details and editing -->
+{#if showEditDialog || (showCardModal && viewingCardId)}
+  <Overlay
+    onclose={() => { showEditDialog = false; showCardModal = false; viewingCardId = null; }}
+    class={showEditDialog ? "edit-dialog" : "card-dialog"}
+  >
+    {#if showEditDialog}
+      <div class="edit-header">
+        <h3>Edit Card</h3>
+        <button type="button" class="btn small" onclick={() => (editPreview = !editPreview)}>
+          {editPreview ? "Edit" : "Preview"}
+          <span class="shortcut-hint">{navigator.platform.includes("Mac") ? "⌘P" : "Ctrl+P"}</span>
+        </button>
       </div>
-    {:else}
-      <CardForm
-        bind:name={formName}
-        bind:content={formContent}
-        bind:tags={formTags}
-        bind:dueDate={formDueDate}
-        editMode
-        suggestions={allTags}
-      />
-    {/if}
 
-    <div class="dialog-actions">
-      <button type="button" class="btn" onclick={() => (showEditDialog = false)}>Cancel</button>
-      <button type="button" class="btn primary" onclick={submitEdit}>
-        Save
-        <span class="shortcut-hint"
-          >{navigator.platform.includes("Mac") ? "⌘Enter" : "Ctrl+Enter"}</span
-        >
-      </button>
-    </div>
-  </Overlay>
-{/if}
+      {#if editPreview}
+        <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+        <div class="edit-preview markdown" onclick={handleMarkdownClick}>
+          {#if formContent.trim()}
+            {@html marked.parse(formContent)}
+          {:else}
+            <p class="empty-content">No description</p>
+          {/if}
+        </div>
+      {:else}
+        <CardForm
+          bind:name={formName}
+          bind:content={formContent}
+          bind:tags={formTags}
+          bind:dueDate={formDueDate}
+          editMode
+          suggestions={allTags}
+        />
+      {/if}
 
-<!-- card modal -->
-{#if showCardModal && viewingCardId}
-  {@const card = cards.find((c) => c.id === viewingCardId)}
-  {#if card}
-    <CardModal
-      {card}
-      columns={COLUMNS}
-      {store}
-      onclose={() => { showCardModal = false; viewingCardId = null; }}
-      onedit={() => { showCardModal = false; openEditFor(card); }}
-      ondone={async () => { await store.markDone(card.id); showCardModal = false; viewingCardId = null; }}
-      onarchive={async () => {
+      <div class="dialog-actions">
+        <button type="button" class="btn" onclick={() => (showEditDialog = false)}>Cancel</button>
+        <button type="button" class="btn primary" onclick={submitEdit}>
+          Save
+          <span class="shortcut-hint"
+            >{navigator.platform.includes("Mac") ? "⌘Enter" : "Ctrl+Enter"}</span
+          >
+        </button>
+      </div>
+    {:else if viewingCardId}
+      {@const card = cards.find((c) => c.id === viewingCardId)}
+      {#if card}
+        <CardModal
+          {card}
+          columns={COLUMNS}
+          {store}
+          onclose={() => { showCardModal = false; viewingCardId = null; }}
+          onedit={() => { showCardModal = false; openEditFor(card); }}
+          ondone={async () => { await store.markDone(card.id); showCardModal = false; viewingCardId = null; }}
+          onarchive={async () => {
         if (card.archived) {
           await store.restore(card.id, "backlog");
         } else {
@@ -499,8 +499,10 @@
         showCardModal = false;
         viewingCardId = null;
       }}
-    />
-  {/if}
+        />
+      {/if}
+    {/if}
+  </Overlay>
 {/if}
 
 {#if showCommandPalette}
